@@ -18,7 +18,8 @@
 #define TAMANO_Y_MAP 35
 
 #define TAMAMANO_CASILLA 32
-#define TAMAMANO_ENEMIGO 20
+#define TAMAMANO_ENEMIGO 96
+
 
 int wave = 1, enemy_alive = 0, spawn_timer = 0, spanw_count=0, enemy_to_spawn = 0;
 int total_spawns = 0, timer_move_enemy=0;
@@ -63,8 +64,8 @@ void cero()
     for(int i=0; i<MAX_ENEMY; i++)
     {
         enemy[i].frame_actual = 0;
-        enemy[i].total_frames = 8;
-        enemy[i].tiemo_frame = 0.2;
+        enemy[i].total_frames = 16;
+        enemy[i].tiemo_frame = 8;
         enemy[i].temporiazador = 0;
     }
 }
@@ -426,6 +427,7 @@ int main()
     int fila = 0;
     int i,j;
 
+
     while(fila < TAMANO_Y_MAP && fgets(mapa[fila], sizeof(mapa[fila]), archivo_map))
     {
         fila++;
@@ -454,9 +456,21 @@ int main()
 
 
     must_init(al_init_image_addon(), "image addon");
-    ALLEGRO_BITMAP* tierra = al_load_bitmap("texture_suelo.png");
-    ALLEGRO_BITMAP* enemy1 = al_load_bitmap("RUN.png");
-
+    ALLEGRO_BITMAP* texture_suelo = al_load_bitmap("assets/texture_suelo.png");
+    ALLEGRO_BITMAP* enemy1 = al_load_bitmap("assets/RUN.png");
+    ALLEGRO_BITMAP* sp = al_load_bitmap("assets/texture.png");
+    if (!texture_suelo || !enemy1 || !sp) 
+    {
+        if(!enemy1)
+        {
+            printf("run\n");
+        }
+        if(!sp)
+        {
+            printf("sp\n");
+        }
+        printf("Error cargando bitmaps\n");
+    }
 
     al_start_timer(timer);
     while(1)
@@ -527,16 +541,16 @@ int main()
                     switch (mapa[i][j])
                     {
                     case '#':
-                        al_draw_filled_rectangle(j*TAMAMANO_CASILLA,i*TAMAMANO_CASILLA,j*TAMAMANO_CASILLA+TAMAMANO_CASILLA,i*TAMAMANO_CASILLA+TAMAMANO_CASILLA,al_map_rgba_f(1, 0, 0, 1));
+                        al_draw_bitmap_region(texture_suelo, 400, 160, TAMAMANO_CASILLA, TAMAMANO_CASILLA, j* TAMAMANO_CASILLA, i* TAMAMANO_CASILLA, 0);            
                         break;
                     case '.':
-                        al_draw_filled_rectangle(j*TAMAMANO_CASILLA,i*TAMAMANO_CASILLA,j*TAMAMANO_CASILLA+TAMAMANO_CASILLA,i*TAMAMANO_CASILLA+TAMAMANO_CASILLA,al_map_rgba_f(1, 0, 1, 1));
+                        al_draw_bitmap_region(texture_suelo, 0, 0, TAMAMANO_CASILLA, TAMAMANO_CASILLA, j* TAMAMANO_CASILLA, i* TAMAMANO_CASILLA, 0);
                         break;
                     case 'r':
-                        
+                        al_draw_bitmap_region(texture_suelo, 165, 10, TAMAMANO_CASILLA, TAMAMANO_CASILLA, j* TAMAMANO_CASILLA, i* TAMAMANO_CASILLA, 0);
                         break;
                     case 'S':
-                        al_draw_filled_rectangle(j*TAMAMANO_CASILLA,i*TAMAMANO_CASILLA,j*TAMAMANO_CASILLA+TAMAMANO_CASILLA,i*TAMAMANO_CASILLA+TAMAMANO_CASILLA,al_map_rgba_f(0, 1, 1, 1));
+                        al_draw_bitmap_region(sp, 0, 0, TAMAMANO_CASILLA, TAMAMANO_CASILLA, j* TAMAMANO_CASILLA, i* TAMAMANO_CASILLA, 0);
                         break;
                     case 'E':
                         al_draw_filled_rectangle(j*TAMAMANO_CASILLA,i*TAMAMANO_CASILLA,j*TAMAMANO_CASILLA+TAMAMANO_CASILLA,i*TAMAMANO_CASILLA+TAMAMANO_CASILLA,al_map_rgba_f(1, 1, 0, 1));
@@ -550,7 +564,7 @@ int main()
                 if (enemy[i].used)
                 {
                    
-                    enemy[i].temporiazador += al_get_time();
+                    enemy[i].temporiazador++;
                     if(enemy[i].temporiazador >= enemy[i].tiemo_frame)
                     {
                         enemy[i].temporiazador = 0;
@@ -560,8 +574,9 @@ int main()
                             enemy[i].frame_actual = 0;
                         }
                     }
-                    int sx = enemy[i].frame_actual * TAMAMANO_CASILLA;
-                    al_draw_bitmap_region(enemy1, sx, 15, TAMAMANO_CASILLA, TAMAMANO_CASILLA,enemy[i].nx, enemy[i].ny, 0 );
+                    int sx = enemy[i].frame_actual * 96;
+                    al_draw_scaled_bitmap(enemy1, sx, 0, 96, 96, (enemy[i].nx - 30), (enemy[i].ny - 45), TAMAMANO_ENEMIGO, TAMAMANO_ENEMIGO, 0);
+                    sx = 70 + sx;
                 }
             }
             

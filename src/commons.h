@@ -7,28 +7,39 @@
    Agrega aquí solo lo que sea necesario en múltiples módulos.
    ================================================================ */
 
+
 /* ================================================================
    INCLUDES (librerias)
    ================================================================ */
 
-#include <stdio.h>
-#include <stdbool.h>
+   #include <stdio.h>
+   #include <stdlib.h>
+   #include <string.h>
+   #include <stdbool.h>
+   #include <time.h>
+   #include <allegro5/allegro5.h>
+   #include <allegro5/allegro_font.h>
+   #include <allegro5/allegro_primitives.h>
+
 
 /* ================================================================
    DEFINE (constantes)
    ================================================================ */
 
-#define TARGET_FPS      60
+   #define TARGET_FPS 60
+   #define KEY_SEEN 1
+   #define KEY_DOWN 2
+   
 
 /* ================================================================
    ENUMS (manejo de estados)
    ================================================================ */
 
-typedef enum {
+   typedef enum {
     SCREEN_MENU,
     SCREEN_PLAYING,
     SCREEN_GAMEOVER
-} Screen;
+   } Screen;
 
 /* ================================================================
    ESTRUCTURAS
@@ -37,11 +48,13 @@ typedef enum {
 /* ----------------------------------------------------------------
    input.c actualiza a través de la variable GameState, update.c lo lee y reacciona.
    ---------------------------------------------------------------- */
-typedef struct {
-    bool keyUp;
-    bool keyDown;
+   typedef struct {
+      bool keyUp;
+      bool keyDown;
+      bool keyLeft;
+      bool keyRight;
     // Puedes agregar más teclas o combinaciones de teclas
-} InputState;
+   } InputState;
 
 
 /* ----------------------------------------------------------------
