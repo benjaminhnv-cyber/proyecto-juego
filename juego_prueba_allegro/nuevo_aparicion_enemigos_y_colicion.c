@@ -58,8 +58,8 @@ typedef struct ENEMY
 
 }ENEMY;
 ENEMY enemy[MAX_ENEMY];
-// textura reinicio
-void cero()
+
+void cero() // textura reinicio
 {
     for(int i=0; i<MAX_ENEMY; i++)
     {

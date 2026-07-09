@@ -20,6 +20,7 @@
    #include <allegro5/allegro5.h>
    #include <allegro5/allegro_font.h>
    #include <allegro5/allegro_primitives.h>
+   #include <math.h>
 
 
 /* ================================================================
@@ -27,8 +28,20 @@
    ================================================================ */
 
    #define TARGET_FPS 60
+   #define DPI 0.5
    #define KEY_SEEN 1
    #define KEY_DOWN 2
+   #define TAMANO_X_MAP 50
+   #define TAMANO_Y_MAP 50
+   #define TAMAÑO_X_PT 1200
+   #define TAMAÑO_Y_PT 1200
+   #define TAMANO_CASILLA 32
+   #define TIEMPO_DE_APRICION 300 // 60 por segundo estos son 5 segundos por generacion 
+   #define TIEMPO_CONTRUYENDO 300 //tiempo 
+   #define MAX_ALDEANO 2
+   #define MAX_RECURSOS 70
+   #define MAX_ESTRUCTURA 10
+   #define MAX_BULLET 200
    
 
 /* ================================================================
