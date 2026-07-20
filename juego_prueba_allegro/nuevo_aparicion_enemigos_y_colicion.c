@@ -16,7 +16,6 @@
 
 #define TAMANO_X_MAP 50
 #define TAMANO_Y_MAP 35
-
 #define TAMAMANO_CASILLA 32
 #define TAMAMANO_ENEMIGO 96
 
@@ -89,14 +88,6 @@ typedef struct
     int recoleccion;// indicadores de que esta haciendo 
     int contruccion;
 }ALDEANO;
-
-typedef struct 
-{
-    /*int live;posible*/
-    bool used;
-    int atack;
-    int bullet;
-}ESTRUCTURA;
 
 /* posible aliado para que ataquen a los enemy
 typedef struct 
@@ -294,73 +285,6 @@ void update_enemy(char mapa[TAMANO_Y_MAP][TAMANO_X_MAP]) //esto es es el movimie
         }
     }
 }
-
-void generacion_material()
-{
-    //este momo lo que va hacer es generar diferentes recursos con diferentes proabilidad  oro, madera ,o piedras arboles etc
-}
-
-void generacion_de_insumos(int mapa[TAMANO_Y_MAP][TAMANO_X_MAP])
-{
-    int i,j;
-    for(i = 0; i < TAMANO_Y_MAP; i++)
-    {
-        for(i = 0; i < TAMANO_X_MAP; j++)
-        {
-            if(enemy_to_spawn > 0)
-            {
-                spawn_timer++;
-
-                if(spawn_timer >= 60) // cada 1 segundo cada 60 FPS
-                {
-                   // este es el spawn de los recursoso y que los enemigos nopueda pasar
-                enemy_to_spawn--; // resta el valor de enmy_spawn para que ya no aparescan mas recursos despues
-                spawn_timer = 0;
-                }
-                else if(1<1)
-                {
-                    // aqui los materiales no se generarn porque ya llego el limite
-                    break; 
-                }
-            }
-        }
-    }
-}
-
-void aldeano_aparicion()
-{
-    // este momo va a hacer los secuases del jugador para hacer mandados 
-}
-
-void almacen()
-{
-    //
-}
-
-bool collide(int ax1, int ay1, int ax2, int ay2, int bx1, int by1, int bx2, int by2) // esto es a futuro 
-{
-    if(ax2 < bx1) return false;
-    if(ax1 > bx2) return false;
-    if(ay2 < by1) return false;
-    if(ay1 > by2) return false;
-
-    return true;
-}
-
-void colisiones() // esto es a futuro 
-{
-    for(int i=0; i < MAX_ENEMY; i++)
-    {
-        for(int j=i+1; j< MAX_ENEMY;j++)
-        {
-            if(collide(enemy[i].nx, enemy[i].ny, enemy[i].nx + 20, enemy[i].ny + 20, enemy[j].nx, enemy[j].ny, enemy[j].nx + 20, enemy[j].ny + 20))
-            {
-            }
-        }
-    }
-}
-
-//
 
 void must_init(bool test, const char *description) // lo que hace es revisar si se a ejecutado correctamente 
 {
