@@ -18,7 +18,7 @@
 #define KEY_DOWN     2
 
 #define TAMANO_X_MAP 60
-#define TAMANO_Y_MAP 50
+#define TAMANO_Y_MAP 52
 
 #define TAMAÑO_X_PT 1942
 #define TAMAÑO_Y_PT 1100
@@ -29,16 +29,18 @@
 #define TIEMPO_CONTRUYENDO 300
 #define TIEMPO_DISPARO 60 // lo mismo por frame
 
-#define MAX_ALDEANO 2
+#define MAX_ALDEANO 10
 #define MAX_RECURSOS 70
 #define MAX_ESTRUCTURA 10
 #define MAX_BULLET 200
+#define MAX_ARBOLES 200
 #define MURO 10
 
 #define TAMAMANO_ENEMIGO 120
 #define MAX_ENEMY 100
 #define MAX_SPAWNS 20
-#define MAX_PUNTOS 3500
+#define MAX_PUNTOS 6000
+#define MAX_BORDES 300
 #define ALCANCE_TOWER 150
 
 bool modo_contrucccion = false; //variable global para que se active el modo contruccion 
@@ -48,6 +50,7 @@ int tiempo_contruyendo = TIEMPO_CONTRUYENDO;
 // estoe s el sistema de los aldeanos 
 int wave = 1, enemy_alive = 0, spawn_timer = 0,enemy_to_spawn = 0;
 int total_spawns = 0, timer_move_enemy=0, sax, say;
+int costo_aldeanos = 5;
 
 // tema del pos del mause
 float x = 0, y = 0, dx = 0, dy = 0;
@@ -66,12 +69,61 @@ ALLEGRO_BITMAP *bor2;
 ALLEGRO_BITMAP *bor;
 ALLEGRO_BITMAP *torre;
 ALLEGRO_BITMAP *menu;
+ALLEGRO_BITMAP *ruta_suelo;
+
+typedef struct
+{
+    int textura_x;
+    int textura_y;
+    int x;
+    int y;
+}RUTA;
+
+typedef struct
+{
+    RUTA list[MAX_PUNTOS];
+    int numero;
+}RUTAS;
+RUTAS rutas;
+
+typedef enum 
+{
+    BORDE_ES_SUP_DER,
+    BORDE_ES_INF_DER,
+    BORDE_ES_INF_IZQ,
+    BORDE_ES_SUP_IZQ,
+    BORDE_VR_IZQ,
+    BORDE_VR_DER,
+    BORDE_HR_SUP,
+    BORDE_HR_INF,
+    BORDE_HORIZONTAL,
+    BORDE_VERTICAL
+}TIPO_BORDE;
+
+typedef struct 
+{
+    int x;
+    int y;
+    int textura_x;
+    int textura_Y;
+    TIPO_BORDE tipo;
+}BORDE_MAPA;
+
+typedef struct
+{
+    BORDE_MAPA list[MAX_BORDES];
+    int numero;
+}BORDES;
+BORDES bordes;
 
 typedef struct 
 {
     int x;
     int y;
     bool used;
+    
+    int textura_x;
+    int textura_y;
 }PUNTO;
 
 typedef struct 
@@ -80,6 +132,22 @@ typedef struct
     int numero;
 }PUNTOS;
 PUNTOS puntos;
+
+typedef struct 
+{
+    int x;
+    int y;
+    bool used;
+}ARBOL;
+
+typedef struct 
+{
+    ARBOL lista[MAX_ARBOLES];
+    int numero;
+}ARBOLES;
+ARBOLES arboles;
+
+
 //esto es la estructura de las torres
 typedef enum
 {
@@ -111,6 +179,7 @@ typedef struct
 
     int x; // ubicacion 
     int y;
+    int live;
 
     ESTADO_ESTRUCTURA estado; // este es el estado que va a estar
 
@@ -179,6 +248,9 @@ typedef struct
     bool estado;
     int durabilidad;
     int tiempo_aparicion;
+    int i_arbol;
+    bool respawn;
+    char terreno_original;
 }RECURSOS;
 RECURSOS recursos[MAX_RECURSOS];
 
@@ -201,7 +273,10 @@ typedef struct ENEMY
 {
     TYPE_ENEMY type;
     int life;
+    int max_life;
     bool used;
+    int retardo_movimiento;
+    int camino;
 
     int colison; // esto a futuro 
    
@@ -276,6 +351,7 @@ void carga_imagen();
 void imprimir_boton(int botonx, int botony);
 void imprimir_mapa(int fila, char mapa[TAMANO_Y_MAP][TAMANO_X_MAP]);
 void imprimir_mapa_y_enemigos(char mapa[TAMANO_Y_MAP][TAMANO_X_MAP], int fila);
+void imprimir_recursos(char mapa[TAMANO_Y_MAP][TAMANO_X_MAP], int fila);
 void imprimir_texto();
 void dibujo_aldeano();
 void modo_cont(int x, int y);

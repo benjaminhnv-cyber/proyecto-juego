@@ -9,6 +9,13 @@ int main()
     must_init(al_install_keyboard(), "keyboard");
     must_init(al_init_primitives_addon(), "primitives");
     must_init(al_install_mouse(), "mouse");
+    
+    // esssto lo que hace es poner 0 en todo 
+    memset(aldeanos,0,sizeof(aldeanos));
+    memset(recursos,0,sizeof(recursos));
+    memset(estructura,0,sizeof(estructura));
+    memset(bullet,0,sizeof(bullet));
+    memset(enemy,0,sizeof(enemy));
 
     ALLEGRO_TIMER* timer = al_create_timer(1.0 / 60.0);
     must_init(timer, "timer");
@@ -26,7 +33,7 @@ int main()
     al_init_font_addon();
     al_init_ttf_addon();
 
-    ALLEGRO_FONT *font = al_load_ttf_font("/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf", 24, 0);
+    ALLEGRO_FONT *font = al_load_ttf_font("/usr/share/fonts/opentype/mathjax/MathJax_Caligraphic-Regular.otf", 24, 0);
     must_init(font, "font");
 
     al_set_new_display_option(ALLEGRO_SAMPLE_BUFFERS, 1, ALLEGRO_SUGGEST);
@@ -71,9 +78,15 @@ int main()
     vaciar_recursos_res(recursos_cargado);
    
     //aqui esta la base donde se colocara el boton aqui puede ir futuro cambios para cuando haya un menu
-    int botonx = 55 * TAMANO_CASILLA;
-    int bontony = 18 * TAMANO_CASILLA;
+    int botonx = 53 * TAMANO_CASILLA;
+    int bontony = 10 * TAMANO_CASILLA;
 
+    int boton_2x = 53 * TAMANO_CASILLA;
+    int boton_2y = 20 * TAMANO_CASILLA;
+
+    stock.madera = 20;
+    stock.piedra = 0;
+    stock.oro = 0;
     al_start_timer(timer);
     while(1)
     {
@@ -130,14 +143,16 @@ int main()
         if(redraw && al_is_event_queue_empty(queue))
         {
             al_clear_to_color(al_map_rgb_f(0, 0, 0));
-            imprimir_boton(botonx,bontony);
             imprimir_mapa_y_enemigos(mapa,fila);
             imprimir_enemigo();
             dibujo_aldeano();
-            modo_cont(x,y);
             al_draw_filled_rectangle(x, y, x + 10, y + 10, al_map_rgb_f(0,1,1));
+            imprimir_recursos(mapa,fila);
             imprimir_texto(font);
             dibujo_proyectil();
+            imprimir_boton(botonx,bontony);
+            modo_cont(x,y);
+
 
             al_flip_display();
             
@@ -158,11 +173,10 @@ int main()
 // aldeanos 
 void spwan_aldeano()
 {
-    int i = 1;
+    int i = 0;
     aldeanos[i].used = true;
     aldeanos[i].ax = 100;
     aldeanos[i].ay = 100;
-            
     aldeanos[i].estado = id_aldeano;
     aldeanos[i].selec = false;
     aldeanos[i].dest_x = aldeanos[i].ax;
@@ -204,7 +218,7 @@ void movimiento_aldeano(char mapa[TAMANO_Y_MAP][TAMANO_X_MAP])
                 int fila = nv_y / TAMANO_CASILLA;
                 int columna = nv_x / TAMANO_CASILLA;
                 
-                if(fila >= 0 && fila < TAMANO_Y_MAP && columna >= 0 && columna < TAMANO_X_MAP && mapa[fila][columna] != '#')
+                if(fila >= 0 && fila < TAMANO_Y_MAP && columna >= 0 && columna < TAMANO_X_MAP && mapa[fila][columna] != '#' && mapa[fila][columna] != '\0')
                 {                            
                     aldeanos[i].ax = nv_x;
                     aldeanos[i].ay = nv_y;
@@ -217,9 +231,9 @@ void movimiento_aldeano(char mapa[TAMANO_Y_MAP][TAMANO_X_MAP])
                 // 
             if(fabs((aldeanos[i].ax - aldeanos[i].dest_x)) <= 1 && fabs((aldeanos[i].ay - aldeanos[i].dest_y)) <= 1)// esto lo que hace es cuando si esta en la posicion del mapa da la forma de recolectar recursoso
             {
+                int fila = (aldeanos[i].ay + TAMANO_CASILLA / 2) / TAMANO_CASILLA;
+                int colum = (aldeanos[i].ax + TAMANO_CASILLA / 2) / TAMANO_CASILLA;
 
-                int fila = aldeanos[i].ay / TAMANO_CASILLA;
-                int colum = aldeanos[i].ax / TAMANO_CASILLA;
                 if(fila >= 0 && fila < TAMANO_Y_MAP && colum >= 0 && colum < TAMANO_X_MAP)// aqui ubo cambio 
                 {                  
                     if(mapa[fila][colum] == 'M')
@@ -279,6 +293,7 @@ void dibujo_aldeano()
     }
 }
 
+
 // torretas
 void contruccion(int i)
 {
@@ -297,7 +312,7 @@ void contruccion(int i)
                 aldeanos[i].estado = id_aldeano;
                 estructura[s].estado = listo;
                 estructura[s].tier++;
-                estructura[s].daño = 2;
+                estructura[s].daño = 2 * estructura[s].tier;
             }
         }
     }
@@ -367,7 +382,7 @@ void update_bullet()
 {
     for(int p = 0; p < MAX_BULLET; p++)
     {    
-        if(bullet[p].used)
+        if(bullet[p].objetivo >=0 && bullet[p].objetivo < MAX_ENEMY && enemy[bullet[p].objetivo].used)
         {
             if(enemy[bullet[p].objetivo].used)
             {
@@ -407,6 +422,7 @@ void dibujo_proyectil()
     }
 }
 
+
 // tema de recursos 
 void recoleccion(char mapa[TAMANO_Y_MAP][TAMANO_X_MAP])
 {
@@ -418,6 +434,7 @@ void recoleccion(char mapa[TAMANO_Y_MAP][TAMANO_X_MAP])
             if(aldeanos[i].contador_recollecion >= 60)
             {
                 aldeanos[i].contador_recollecion = 0;
+                printf("Aldeano %d estado:%d recurso:%c\n", i, aldeanos[i].estado, aldeanos[i].recurso_obj);
                 switch(aldeanos[i].recurso_obj)
                 {
                     case 'M':
@@ -433,7 +450,6 @@ void recoleccion(char mapa[TAMANO_Y_MAP][TAMANO_X_MAP])
                     case 'P':
                     stock.piedra++;
                     printf("(%f,%f)\n", aldeanos[i].ax, aldeanos[i].ay);
-                            /*i, ax/TAM_CASILLA y ay/TAM_CASILLA*/
                     break;
 
                 }
@@ -457,50 +473,104 @@ void generar_recurso(char mapa[TAMANO_Y_MAP][TAMANO_X_MAP], PUNTOS *puntos, int 
     {    
         return;
     }
-    while(intento < 100)
-    {
-        int posicion = rand() % puntos->numero;
-        if(!puntos->lista[posicion].used)
+    eleccion = rand()%3 + 1;
+    if(eleccion == 2)
+    {   
+        while(intento < arboles.numero)
         {
-            int rx = puntos->lista[posicion].x;
-            int ry = puntos->lista[posicion].y;
-            eleccion = rand()%3 + 1;
-            switch(eleccion)
+            int randoms = rand()% arboles.numero;
+            if(!arboles.lista[randoms].used && mapa[arboles.lista[randoms].y][arboles.lista[randoms].x] == 'A')
             {
-                case 1:
-                mapa[ry][rx] = 'O';
-                recursos[i].tipo = 'O';
-                recursos[i].durabilidad = 15;
-                break;
+                int rx = arboles.lista[randoms].x;
+                int ry = arboles.lista[randoms].y;
 
+                recursos[i].terreno_original = 'A';
 
-                case 2:
                 mapa[ry][rx] = 'M';
                 recursos[i].tipo = 'M';
+
                 recursos[i].durabilidad = 10;
-                break;
 
+                recursos[i].x = rx;
+                recursos[i].y = ry;
 
-                case 3:
-                mapa[ry][rx] = 'P';
-                recursos[i].tipo = 'P';
-                recursos[i].durabilidad = 20;
-                break;
+                recursos[i].estado = true;
+                arboles.lista[randoms].used = true;
+
+                recursos[i].i_arbol = randoms;
+
+                return;
             }
-
-            recursos[i].x = rx;
-            recursos[i].y = ry;
-            recursos[i].estado = true;
-            puntos->lista[posicion].used = true;
-            return;
-        }
-        intento++;
+            intento++;
+        }        
     }
-    
+    else
+    {
+        while(intento < 100)
+        {
+            int posicion = rand()% puntos->numero;
+            if(!puntos->lista[posicion].used)
+            {
+                int rx = puntos->lista[posicion].x;
+                int ry = puntos->lista[posicion].y;
+
+                if(eleccion == 1)
+                {
+                    recursos[i].terreno_original = '.';
+                    mapa[ry][rx] = 'O';
+                    recursos[i].tipo = 'O';
+                    recursos[i].durabilidad = 15;
+                }
+                else
+                {
+                    recursos[i].terreno_original = '.';
+                    mapa[ry][rx] = 'P';
+                    recursos[i].tipo = 'P';
+                    recursos[i].durabilidad = 20;
+                }
+                recursos[i].x = rx;
+                recursos[i].y = ry;
+                recursos[i].estado = true;
+                puntos->lista[posicion].used = true;
+                return;
+            }
+            intento++;
+        }
+        
+    } 
 }
 
 void aparicion_material(char mapa[TAMANO_Y_MAP][TAMANO_X_MAP]) // bueno encontre una solucion para esto antes funcionaba y tube que preguntar a la ia es mejor colocar respawn global
 {   
+    for(int i = 0; i < MAX_RECURSOS; i++)
+    {
+        if(!recursos[i].estado && recursos[i].respawn)
+        {
+            recursos[i].tiempo_aparicion--;
+
+            if(recursos[i].tiempo_aparicion <= 0)
+            {
+                mapa[recursos[i].y][recursos[i].x] = recursos[i].tipo;
+
+                recursos[i].estado = true;
+                recursos[i].respawn = false;
+
+                if(recursos[i].tipo == 'M')
+                {
+                    recursos[i].durabilidad = 10;
+                    arboles.lista[recursos[i].i_arbol].used = true;
+                }
+                else if(recursos[i].tipo == 'O')
+                {
+                    recursos[i].durabilidad = 15;
+                }
+                else if(recursos[i].tipo == 'P')
+                {
+                    recursos[i].durabilidad = 20;
+                }
+            }
+        }
+    }
     tiempo_spawn--;
 
     if(tiempo_spawn <= 0)
@@ -539,8 +609,14 @@ void desgaste_material(char mapa[TAMANO_Y_MAP][TAMANO_X_MAP], int i)
             if(recursos[m].durabilidad <=0)
             {
                 recursos[m].estado = false;
-                recursos[m].tiempo_aparicion = 300; // esto tarda 60 frames por seg estonces son
-                mapa[fila][colum] = '.';
+                recursos[m].respawn = true;
+                recursos[m].tiempo_aparicion = 300;
+
+                mapa[fila][colum] = recursos[m].terreno_original;
+                if(recursos[m].tipo == 'M')
+                {
+                    arboles.lista[recursos[m].i_arbol].used = false;
+                }
                 aldeanos[i].estado = id_aldeano;
                 aldeanos[i].recurso_obj = '.';
                 break;
@@ -548,6 +624,7 @@ void desgaste_material(char mapa[TAMANO_Y_MAP][TAMANO_X_MAP], int i)
         }
     }
 }
+
 
 // interaccion de los jugadores 
 void must_init(bool test, const char *description)
@@ -571,6 +648,7 @@ int leectura_material_mapa(char mapa[TAMANO_Y_MAP][TAMANO_X_MAP])
                 recursos[n].y = i;
                 recursos[n].tipo = mapa[i][j];
                 recursos[n].estado = true;
+                recursos[n].respawn = false;
                 recursos[n].tiempo_aparicion = 0;
                 switch(mapa[i][j])
                 {
@@ -635,7 +713,7 @@ void seleccion_estructura(char mapa[TAMANO_Y_MAP][TAMANO_X_MAP],int x, int y)
     {
         if(fila >= 0 && fila < TAMANO_Y_MAP && columna >= 0 && columna < TAMANO_X_MAP)
         {
-            if(mapa[fila][columna] == '.' ||mapa[fila][columna] == 'R')
+            if(mapa[fila][columna] == '.' ||mapa[fila][columna] == 'r')
             {
                 for(int i = 0; i < MAX_ESTRUCTURA; i++)
                 {
@@ -647,6 +725,12 @@ void seleccion_estructura(char mapa[TAMANO_Y_MAP][TAMANO_X_MAP],int x, int y)
                 }
                 if(!ocupado)
                 {
+                    if(stock.madera < 5)
+                    {
+                        printf("No hay suficiente madera.\n");
+                        modo_contrucccion = false;
+                        return;
+                    }   
                     for(int i = 0; i < MAX_ESTRUCTURA; i++)
                     {
                         if(!estructura[i].used)
@@ -658,6 +742,7 @@ void seleccion_estructura(char mapa[TAMANO_Y_MAP][TAMANO_X_MAP],int x, int y)
                             modo_contrucccion = false;
                             mapa[fila][columna] = 'T'; 
                             estructura[i].tiempo_de_contruccion = 0;
+                            stock.madera -= 5;
                             break;
                         }
                     }
@@ -755,8 +840,8 @@ void movimiento_mouse(float *x, float *y, float *dx, float *dy, unsigned char ke
     *redraw = true;
 }
 
-// esta parte es la generacion de enemigos y interaccion del enemigo
 
+// esta parte es la generacion de enemigos y interaccion del enemigo
 void spwan_enemy()
 {
     if (total_spawns <= 0)
@@ -770,7 +855,8 @@ void spwan_enemy()
         {
             enemy[i].used = true;
             enemy[i].type = ENEMY_NR;
-            enemy[i].life = 3 + 2 * wave;
+            enemy[i].max_life = 3 + 2 * wave;
+            enemy[i].life = enemy[i].max_life;
             enemy[i].damage = wave;
 
             random = rand()% total_spawns;
@@ -778,12 +864,13 @@ void spwan_enemy()
             enemy[i].psmapx = spawns[random].posx;
             enemy[i].psmapy = spawns[random].posy;
             
-            enemy[i].nx = enemy[i].psmapx * TAMANO_CASILLA;
-            enemy[i].ny = enemy[i].psmapy * TAMANO_CASILLA;
+            enemy[i].nx = enemy[i].psmapx * TAMANO_CASILLA + TAMANO_CASILLA / 2;
+            enemy[i].ny = enemy[i].psmapy * TAMANO_CASILLA + TAMANO_CASILLA / 2;
 
             enemy[i].anteriorx = -1;
             enemy[i].anteriory = -1;
             enemy[i].siguiente_casilla = false;
+            enemy[i].retardo_movimiento = rand()% 60;
 
             enemy_alive++;
 
@@ -792,19 +879,29 @@ void spwan_enemy()
     }
 }
 
-bool casilla_ocupada(int x, int y, int id) // lo que hace es evitar que los enemigos esten en el mismo punto
+bool casilla_ocupada(int x, int y, int id)
 {
-    int i;
-    for(i = 0; i < MAX_ENEMY; i++)
+    for(int i = 0; i < MAX_ENEMY; i++)
     {
         if(i == id)
-        continue;
+            continue;
 
-        if(enemy[i].used && enemy[i].psmapx == x && enemy[i].psmapy == y)
+        if(enemy[i].used)
         {
-            return true;
+            int enemigo_x = enemy[i].nx / TAMANO_CASILLA;
+            int enemigo_y = enemy[i].ny / TAMANO_CASILLA;
+
+            if(enemigo_x == x && enemigo_y == y)
+            {
+                return true;
+            }
+            if(enemy[i].psmapx == x && enemy[i].psmapy == y)
+            {
+                return true;
+            }
         }
     }
+
     return false;
 }
 
@@ -900,9 +997,22 @@ void update_enemy(char mapa[TAMANO_Y_MAP][TAMANO_X_MAP], int salx, int saly) //e
         
         if(enemy[i].used)
         {
-            int destino_x = enemy[i].psmapx * TAMANO_CASILLA;
-            int destino_y = enemy[i].psmapy * TAMANO_CASILLA;
+            if(enemy[i].retardo_movimiento > 0)
+            {
+                enemy[i].retardo_movimiento--;
+                continue;
+            }
+            if(enemy[i].life <= 0)
+            {
+                enemy[i].used = false;
+                enemy_alive--;
+                continue;
+            }
 
+            int destino_x = enemy[i].psmapx * TAMANO_CASILLA + TAMANO_CASILLA / 2;
+            int destino_y = enemy[i].psmapy * TAMANO_CASILLA + TAMANO_CASILLA / 2;
+
+            
             if(enemy[i].nx < destino_x)
             {
                 enemy[i].nx++;
@@ -935,14 +1045,11 @@ void update_enemy(char mapa[TAMANO_Y_MAP][TAMANO_X_MAP], int salx, int saly) //e
                     enemy[i].ny = destino_y;
                 }
             }
-            if(abs(enemy[i].nx - destino_x) <= 8 && abs(enemy[i].ny - destino_y) <= 8 && !enemy[i].siguiente_casilla)
+            if(abs(enemy[i].nx - destino_x) <= 2 && abs(enemy[i].ny - destino_y) <= 2)
             {
+                enemy[i].nx = destino_x;
+                enemy[i].ny = destino_y;
                 eleccion_de_la_siguiente_casilla(i, mapa, salx, saly);
-                enemy[i].siguiente_casilla = true;
-            }
-            if(enemy[i].nx == destino_x && enemy[i].ny == destino_y)
-            {
-                enemy[i].siguiente_casilla = false;
             }
         }
     }
@@ -967,6 +1074,7 @@ void cero() // textura reinicio
         enemy[i].temporiazador = 0;
     }
 }
+
 
 // oleadas o wave
 void start_wave() // el spawn cantidad de enemigos de enemigos 
@@ -1004,62 +1112,74 @@ void check_wave() // ronda que cada vez paza
 //mapa
 void imprimir_mapa_y_enemigos(char mapa[TAMANO_Y_MAP][TAMANO_X_MAP], int fila)
 {
+    
+    for(int b = 0; b < bordes.numero; b++)
+    {
+        int x = bordes.list[b].x;
+        int y = bordes.list[b].y;
+        switch(bordes.list[b].tipo)
+        {
+            case BORDE_ES_SUP_DER:
+            al_draw_bitmap_region(texture_suelo, bordes.list[b].textura_x, bordes.list[b].textura_Y, TAMANO_CASILLA, TAMANO_CASILLA, bordes.list[b].x * TAMANO_CASILLA, bordes.list[b].y * TAMANO_CASILLA, 0);
+            al_draw_bitmap_region(ez3, 0, 0, TAMANO_CASILLA, TAMANO_CASILLA, x * TAMANO_CASILLA, y * TAMANO_CASILLA, 0);
+            break;
+
+            case BORDE_ES_INF_DER:
+            al_draw_bitmap_region(texture_suelo, bordes.list[b].textura_x, bordes.list[b].textura_Y, TAMANO_CASILLA, TAMANO_CASILLA, bordes.list[b].x * TAMANO_CASILLA, bordes.list[b].y * TAMANO_CASILLA, 0);
+            al_draw_bitmap_region(ez2, 0, 10, TAMANO_CASILLA, TAMANO_CASILLA, x * TAMANO_CASILLA, y * TAMANO_CASILLA, 0);
+            break;
+
+            case BORDE_ES_INF_IZQ:
+            al_draw_bitmap_region(texture_suelo, bordes.list[b].textura_x, bordes.list[b].textura_Y, TAMANO_CASILLA, TAMANO_CASILLA, bordes.list[b].x * TAMANO_CASILLA, bordes.list[b].y * TAMANO_CASILLA, 0);
+            al_draw_bitmap_region(ez, 0, 10, TAMANO_CASILLA, TAMANO_CASILLA, x * TAMANO_CASILLA, y * TAMANO_CASILLA, 0);
+            break;
+
+            case BORDE_ES_SUP_IZQ:
+            al_draw_bitmap_region(texture_suelo, bordes.list[b].textura_x, bordes.list[b].textura_Y, TAMANO_CASILLA, TAMANO_CASILLA, bordes.list[b].x * TAMANO_CASILLA, bordes.list[b].y * TAMANO_CASILLA, 0);
+            al_draw_bitmap_region(ez4, 0, 0, TAMANO_CASILLA, TAMANO_CASILLA, x * TAMANO_CASILLA, y * TAMANO_CASILLA, 0);
+            break;
+
+            case BORDE_VR_IZQ:
+            al_draw_bitmap_region(texture_suelo, bordes.list[b].textura_x, bordes.list[b].textura_Y, TAMANO_CASILLA, TAMANO_CASILLA, bordes.list[b].x * TAMANO_CASILLA, bordes.list[b].y * TAMANO_CASILLA, 0);
+            al_draw_bitmap_region(bor4, 0, 0, TAMANO_CASILLA, TAMANO_CASILLA, x * TAMANO_CASILLA, y * TAMANO_CASILLA, 0);
+            break;
+
+            case BORDE_VR_DER:
+            al_draw_bitmap_region(texture_suelo, bordes.list[b].textura_x, bordes.list[b].textura_Y, TAMANO_CASILLA, TAMANO_CASILLA, bordes.list[b].x * TAMANO_CASILLA, bordes.list[b].y * TAMANO_CASILLA, 0);
+            al_draw_bitmap_region(bor2, 0, 0, TAMANO_CASILLA, TAMANO_CASILLA, x * TAMANO_CASILLA, y * TAMANO_CASILLA, 0);
+            break;
+
+            case BORDE_HR_SUP:
+            al_draw_bitmap_region(texture_suelo, bordes.list[b].textura_x, bordes.list[b].textura_Y, TAMANO_CASILLA, TAMANO_CASILLA, bordes.list[b].x * TAMANO_CASILLA, bordes.list[b].y * TAMANO_CASILLA, 0);
+            al_draw_bitmap_region(bor3, 0, 0, TAMANO_CASILLA, TAMANO_CASILLA, x * TAMANO_CASILLA, y * TAMANO_CASILLA, 0);
+            break;
+
+            case BORDE_HR_INF:
+            al_draw_bitmap_region(texture_suelo, bordes.list[b].textura_x, bordes.list[b].textura_Y, TAMANO_CASILLA, TAMANO_CASILLA, bordes.list[b].x * TAMANO_CASILLA, bordes.list[b].y * TAMANO_CASILLA, 0);
+            al_draw_bitmap_region(bor, 0, 9, TAMANO_CASILLA, TAMANO_CASILLA, x * TAMANO_CASILLA, y * TAMANO_CASILLA, 0);
+            break;
+        }
+    }
+    for(int q = 0; q < puntos.numero; q++)
+    {
+        al_draw_bitmap_region(texture_suelo, puntos.lista[q].textura_x, puntos.lista[q].textura_y, TAMANO_CASILLA, TAMANO_CASILLA, puntos.lista[q].x * TAMANO_CASILLA, puntos.lista[q].y * TAMANO_CASILLA, 0);
+    }
+    for(int q = 0; q < rutas.numero; q++)
+    {
+        al_draw_bitmap_region(texture_suelo, rutas.list[q].textura_x, rutas.list[q].textura_y, TAMANO_CASILLA, TAMANO_CASILLA, rutas.list[q].x * TAMANO_CASILLA, rutas.list[q].y * TAMANO_CASILLA, 0);
+    }
+    al_draw_scaled_bitmap(menu, 0, 0, al_get_bitmap_width(menu), al_get_bitmap_height(menu), 1568, 0, 352, 1080, 0);
+}
+
+void imprimir_recursos(char mapa[TAMANO_Y_MAP][TAMANO_X_MAP], int fila)
+{
     for(int i = 0; i < fila; i++)
     {
         for(int j=0; mapa[i][j] != '\0'; j++)
         {
             switch (mapa[i][j])
-            {
-                case '#':
-                // aqui hay que colocar un if  
-                bool arriba  = (i > 0 && mapa[i-1][j] == '#');
-                bool abajo   = (i < fila-1 && mapa[i+1][j] == '#');
-                bool izquierda = (j > 0 && mapa[i][j-1] == '#');
-                bool derecha = (mapa[i][j+1] != '\0' && mapa[i][j+1] == '#');         
-                if (arriba && derecha)
-                {
-                    al_draw_bitmap_region(ez, 0, 10, TAMANO_CASILLA, TAMANO_CASILLA, TAMANO_CASILLA * j, TAMANO_CASILLA * i, 0);
-                }
-                else if (abajo && derecha)
-                {
-                    al_draw_bitmap_region(ez4, 0, 0, TAMANO_CASILLA, TAMANO_CASILLA, TAMANO_CASILLA * j, TAMANO_CASILLA * i, 0);
-                }
-                else if (abajo && izquierda)
-                {
-                    al_draw_bitmap_region(ez3, 0, 0, TAMANO_CASILLA, TAMANO_CASILLA, TAMANO_CASILLA * j, TAMANO_CASILLA * i, 0);
-                }
-                else if (arriba && izquierda)
-                {
-                    al_draw_bitmap_region(ez2, 0, 10, TAMANO_CASILLA, TAMANO_CASILLA, TAMANO_CASILLA * j, TAMANO_CASILLA * i, 0);
-                }
-                // lados del mapa
-                if(mapa[i][j + 1] == '\n' && i > 0 && i < fila - 1)
-                {
-                    al_draw_bitmap_region(bor2, 0, 0, TAMANO_CASILLA, TAMANO_CASILLA, j * TAMANO_CASILLA, i * TAMANO_CASILLA, 0);
-                }
-                if(j == 0 && i > 0 && i < fila - 1)
-                {
-                    al_draw_bitmap_region(bor4, 0, 0, TAMANO_CASILLA, TAMANO_CASILLA, j * TAMANO_CASILLA, i * TAMANO_CASILLA, 0);
-                }
-                if(i == 0 && j > 0 && mapa[i][j + 2] != '\0')
-                {
-                    al_draw_bitmap_region(bor3, 0, 0, TAMANO_CASILLA, TAMANO_CASILLA, j * TAMANO_CASILLA, i * TAMANO_CASILLA, 0);
-                }
-                if(i == fila - 1 && j > 0 && mapa[i][j + 1] != '\0')
-                {
-                    al_draw_bitmap_region(bor, 0, 9, TAMANO_CASILLA, TAMANO_CASILLA, j * TAMANO_CASILLA, i * TAMANO_CASILLA, 0);
-                }
-
-                break;
-                    
-                case '.':
-                al_draw_bitmap_region(texture_suelo, 0, 0, TAMANO_CASILLA, TAMANO_CASILLA, j* TAMANO_CASILLA, i* TAMANO_CASILLA, 0);
-                break;
-                
-                case 'r':
-                al_draw_bitmap_region(texture_suelo, 165, 10, TAMANO_CASILLA, TAMANO_CASILLA, j* TAMANO_CASILLA, i* TAMANO_CASILLA, 0);
-                break;
-
+            {    
+    
                 case 'S':
                 al_draw_bitmap_region(sp, 0, 0, TAMANO_CASILLA, TAMANO_CASILLA, j* TAMANO_CASILLA, i* TAMANO_CASILLA, 0);
                 break;
@@ -1125,8 +1245,6 @@ void imprimir_mapa_y_enemigos(char mapa[TAMANO_Y_MAP][TAMANO_X_MAP], int fila)
             }
         }
     }
-    al_draw_bitmap(menu, 1568, 0, 0);
-
 }
 
 void imprimir_enemigo()
@@ -1155,32 +1273,73 @@ void imprimir_enemigo()
 void imprimir_texto(ALLEGRO_FONT *font)
 {
     char texto[100];
-    int x = 55 * TAMANO_CASILLA;
-    int y = 20 * TAMANO_CASILLA;
-    sprintf(texto, "Madera: %d", stock.madera);
-    al_draw_text(font, al_map_rgb(255, 255, 255), x, y, 0, texto);
+    int x = (52 * TAMANO_CASILLA);
+    int y = (5 * TAMANO_CASILLA);
+    sprintf(texto, "MATERIALES");
+    al_draw_text(font, al_map_rgb(255, 0, 255), 5 + x, y, 0, texto);
+
+    sprintf(texto, "MADERA: %d", stock.madera);
+    al_draw_text(font, al_map_rgb(255, 0, 255), 15 + x, 25 + y, 0, texto);
     
-    sprintf(texto,"Piedra: %d", stock.piedra);
-    al_draw_text(font, al_map_rgb(255, 255, 255), x, 20+ y, 0, texto);
+    sprintf(texto,"PIEDRA: %d", stock.piedra);
+    al_draw_text(font, al_map_rgb(255, 0, 255), 30 + x, 50 + y, 0, texto);
 
-    sprintf(texto,"   Oro: %d", stock.oro);
-    al_draw_text(font, al_map_rgb(255, 255, 255), x, 45 + y, 0, texto);
+    sprintf(texto,"   ORO: %d", stock.oro);
+    al_draw_text(font, al_map_rgb(255, 0, 255), 35 + x, 77 + y, 0, texto);
 
-    sprintf(texto,"wave: %d", wave);
-    al_draw_text(font, al_map_rgb(255, 255, 255), x, y - 35, 0, texto);
+    sprintf(texto,"WAVE: %d", wave);
+    al_draw_text(font, al_map_rgb(255, 0, 255), 1700, 110, 0, texto);
+
+    sprintf(texto, "COSTO:");
+    al_draw_text(font, al_map_rgb(255, 0 ,255), 1700, 355, 0, texto);
+
+    sprintf(texto, "5 MADERA");
+    al_draw_text(font, al_map_rgb(255, 0, 255), 1670, 380, 0, texto);
+
+    /* 
+    if( ESTA COSA ES cuando a seleccionado ya una yorreta para meorar)
+    {
+        
+        sprintf(texto, "COSTO MEJORA");
+        al_draw_text(font, al_map_rgb(255, 0, 255), 1700, 450, 0, texto);
+
+        sprintf(texto, "MADERA: %d", stock.madera);
+        al_draw_text(font, al_map_rgb(255, 0, 255), 1700, 475, 0, texto);
+
+        sprintf(texto, "PIEDRA: %d", stock.piedra);
+        al_draw_text(font, al_map_rgb(255, 0, 255), 1700, 495, 0, texto);
+
+        sprintf(texto, "ORO: %d", stock.oro);
+        al_draw_text(font, al_map_rgb(255, 0, 255), 1700, 515, 0, texto);
+
+        sprintf(texto, "MEJORAR");
+        al_draw_text(font, al_map_rgb(255, 0, 255), 1700, 540, 0, texto);
+        aparece el boton de mejora
+        
+    }
+    */
+
     for(int i = 0; i < MAX_ENEMY; i++)
     {
         sprintf(texto,"vida: %d",enemy[i].life);
         if(enemy[i].used == true)
         {
-            al_draw_text(font, al_map_rgb(255, 255, 255), enemy[i].nx - 5, enemy[i].ny - 25, 0, texto); 
+            float porcentaje = (float)enemy[i].life / enemy[i].max_life;
+            int ancho_barra = 40;
+            int altura_barra = 5;
+
+            // fondo de la barra
+            al_draw_filled_rectangle(enemy[i].nx - 5, enemy[i].ny - 25, enemy[i].nx - 5 + ancho_barra, enemy[i].ny - 25 + altura_barra, al_map_rgb(100, 100, 100));
+
+            // vida actual
+            al_draw_filled_rectangle(enemy[i].nx - 5, enemy[i].ny - 25, enemy[i].nx - 5 + (ancho_barra * porcentaje), enemy[i].ny - 25 + altura_barra, al_map_rgb(0, 255, 0));
         }
     }
 }
 
 void carga_imagen()
 {
-    texture_suelo = al_load_bitmap("assets/texture_suelo.png");
+    texture_suelo = al_load_bitmap("assets/grass.png");
     enemy1 = al_load_bitmap("assets/RUN.png");
     sp = al_load_bitmap("assets/texture.png");
     ez = al_load_bitmap("assets/ez.png");
@@ -1193,20 +1352,24 @@ void carga_imagen()
     bor = al_load_bitmap("assets/bord.png");
     torre = al_load_bitmap("assets/torre.png");
     menu = al_load_bitmap("assets/gamemenu1.png");
+    ruta_suelo = al_load_bitmap("assets/suelo_ruta.png");
 }
 
 int carga_mapa(char mapa[TAMANO_Y_MAP][TAMANO_X_MAP])
 {
-    puntos.numero = 0;
     FILE *archivo_map = fopen("map.txt", "r");
     if(archivo_map == NULL)
     {
-        printf("no se pudo abrir el archivo");
+        printf("no se pudo abrir el archivo\n");
         return 1;
     }
-    int fila = 0;
 
+    int fila = 0;
+    arboles.numero = 0;
+    bordes.numero = 0;
+    puntos.numero = 0;
     total_spawns = 0;
+    rutas.numero = 0;
     sax = -1;
     say = -1;
 
@@ -1216,9 +1379,11 @@ int carga_mapa(char mapa[TAMANO_Y_MAP][TAMANO_X_MAP])
         fila++;
     }
     fclose(archivo_map);
+
     for(int i = 0; i < fila; i++)
     {
-        for(int j = 0; mapa[i][j] != '\0'; j++)
+        int ancho = strlen(mapa[i]);
+        for(int j = 0; j < ancho; j++)
         {
             if(mapa[i][j] == 'S' && total_spawns < MAX_SPAWNS)
             {
@@ -1226,7 +1391,24 @@ int carga_mapa(char mapa[TAMANO_Y_MAP][TAMANO_X_MAP])
                 spawns[total_spawns].posy = i;
                 total_spawns++;
             }
+            if(mapa[i][j] == 'r')
+            {
+                rutas.list[rutas.numero].textura_x = (rand()% 8) * 32;
+                rutas.list[rutas.numero].textura_y = ((rand()% 4) + 4) * 32;
 
+                rutas.list[rutas.numero].x = j;
+                rutas.list[rutas.numero].y = i;
+
+                int random = rand()% 18;
+                puntos.lista[puntos.numero].textura_x = (random % 8) * 32;
+                puntos.lista[puntos.numero].textura_y = ((rand()% 3) + 1) * 32;
+                puntos.lista[puntos.numero].x = j;
+                puntos.lista[puntos.numero].y = i;
+                puntos.lista[puntos.numero].used = true;
+                puntos.numero++;
+
+                rutas.numero++;
+            }
             if(mapa[i][j] == 'E')
             {
                 sax = j;
@@ -1234,6 +1416,10 @@ int carga_mapa(char mapa[TAMANO_Y_MAP][TAMANO_X_MAP])
             }
             if(mapa[i][j] == '.')
             {
+                int random = rand()% 18;
+                puntos.lista[puntos.numero].textura_x = (random % 8) * 32;
+                puntos.lista[puntos.numero].textura_y = ((rand()% 3) + 1) * 32;
+
                 puntos.lista[puntos.numero].x = j;
                 puntos.lista[puntos.numero].y = i;
                 puntos.lista[puntos.numero].used = false;
@@ -1241,12 +1427,81 @@ int carga_mapa(char mapa[TAMANO_Y_MAP][TAMANO_X_MAP])
             }
             if(mapa[i][j] == 'A')
             {
+                int random = rand()% 18;
+                printf("Agregando arbol (%d,%d)\n", j, i);
+            
                 arboles.lista[arboles.numero].x = j;
                 arboles.lista[arboles.numero].y = i;
                 arboles.lista[arboles.numero].used = false;
+
+                int randoms = rand()% 18;
+                puntos.lista[puntos.numero].textura_x = (randoms % 8) * 32;
+                puntos.lista[puntos.numero].textura_y = ((rand()% 3) + 1) * 32;
+                puntos.lista[puntos.numero].x = j;
+                puntos.lista[puntos.numero].y = i;
+                puntos.lista[puntos.numero].used = false;
+                puntos.numero++;
+                
                 arboles.numero++;
             }
+            if(mapa[i][j] == '#')
+            {
+                int b = bordes.numero;
+
+                int random = rand()% 18;
+                bordes.list[bordes.numero].textura_x = (random % 8) * 32;
+                bordes.list[bordes.numero].textura_Y = (rand()% 3) + 1;
+
+                bordes.list[b].x = j;
+                bordes.list[b].y = i;
+                // esquinas
+                if(i == 0 && j == 0)
+                {
+                    bordes.list[b].tipo = BORDE_ES_SUP_IZQ;
+                }
+                else if(i == 0 && j == ancho-1)
+                {
+                    bordes.list[b].tipo = BORDE_ES_SUP_DER;
+                }
+                else if(i == fila-1 && j == 0)
+                {
+                    bordes.list[b].tipo = BORDE_ES_INF_IZQ;
+                }
+                else if(i == fila-1 && j == ancho-1)
+                {
+                    bordes.list[b].tipo = BORDE_ES_INF_DER;
+                }
+                // lados
+                else if(i == 0)
+                {
+                    bordes.list[b].tipo = BORDE_HR_SUP;
+                }
+                else if(i == fila-1)
+                {
+                    bordes.list[b].tipo = BORDE_HR_INF;
+                }
+                else if(j == 0)
+                {
+                    bordes.list[b].tipo = BORDE_VR_IZQ;
+                }
+                else if(j == ancho-1)
+                {
+                    bordes.list[b].tipo = BORDE_VR_DER;
+                }
+                bordes.numero++;
+            }
+            
         }
     }
+    for(int i = 0; i < arboles.numero; i++)
+{
+    printf("Arbol %d: (%d,%d) mapa=%c\n",
+           i,
+           arboles.lista[i].x,
+           arboles.lista[i].y,
+           mapa[arboles.lista[i].y][arboles.lista[i].x]);
+}
+
+return fila;
     return fila;
 }
